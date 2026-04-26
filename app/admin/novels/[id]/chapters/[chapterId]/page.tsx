@@ -1,88 +1,65 @@
 'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import ImageUploader from '@/components/ImageUploader';
 import { Page } from '@/types';
+import Image from 'next/image';
 
-export default function ManagePagesPage() {
-  const params = useParams();
+export default function ManagePagesPage({ params }: { params: { id: string; chapterId: string } }) {
   const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPages = async () => {
-    const { data } = await supabase
-      .from('pages')
-      .select('*')
-      .eq('chapter_id', params.chapterId)
-      .order('page_number', { ascending: true });
+    const { data } = await supabase.from('pages').select('*')
+      .eq('chapter_id', params.chapterId).order('page_number', { ascending: true });
     setPages(data || []);
     setLoading(false);
   };
 
-  useEffect(() => {
+  useEffect(() => { fetchPages(); }, []);
+
+  const addPage = async (imageUrl: string) => {
+    const nextNum = pages.length > 0 ? Math.max(...pages.map(p => p.page_number)) + 1 : 1;
+    const { error } = await supabase.from('pages').insert([{
+      chapter_id: params.chapterId, page_number: nextNum, image_url: imageUrl,
+    }]);
+    if (error) { alert('Error: ' + error.message); return; }
     fetchPages();
-  }, [params.chapterId]);
-
-  const handleImageUploaded = async (url: string) => {
-        const nextPageNumber = pages.length > 0 ? Math.max(...pages.map(p => p.page_number)) + 1 : 1;
-        const { error } = await supabase.from('pages').insert({
-                chapter_id: params.chapterId,
-                page_number: nextPageNumber,
-                image_url: url,
-        });
-        if (error) {
-                alert('Error adding page: ' + error.message);
-                return;
-        }
-        fetchPages();
   };
 
-  const handleDelete = async (pageId: string) => {
-        if (!confirm('Delete this page?')) return;
-        const { error } = await supabase.from('pages').delete().eq('id', pageId);
-        if (error) {
-                alert('Error deleting page: ' + error.message);
-                return;
-        }
-        fetchPages();
+  const deletePage = async (pageId: string) => {
+    if (!confirm('Delete this page?')) return;
+    await supabase.from('pages').delete().eq('id', pageId);
+    fetchPages();
   };
-
-  if (loading) {
-        return >div className="text-center py-12 text-gray-400">Loading pages...>/div>;
-  }
 
   return (
-        >div>
-          >h1 className="comic-title text-3xl mb-8">Manage Pages>/h1>
-        >div className="mb-8">
-            >h2 className="text-xl font-semibold text-white mb-4">Upload New Page>/h2>
-          >ImageUploader onImageUploaded={handleImageUploaded} folder="pages" />
-          >/div>
-        >div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-  {pages.map((page) => (
-              >div key={page.id} className="comic-border rounded-lg overflow-hidden group relative">
-              >img
-              src={page.image_url}
-              alt={`Page ${page.page_number}`}
-              className="w-full h-48 object-cover"
-            />
-                            >div className="p-2 bg-gray-800">
-                              >p className="text-sm text-gray-300">Page {page.page_number}>/p>
-            >/div>
-            >button
-              onClick={() => handleDelete(page.id)}
-              className="absolute top-2 right-2 bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-                              X
-            >/button>
-          >/div>
-        ))}
-      >/div>
-{pages.length === 0 && (
-          >p className="text-center text-gray-500 py-8">No pages yet. Upload your first page above!>/p>
-       )}
-    >/div>
+    <div>
+      <h1 className="comic-title text-4xl text-primary mb-8">MANAGE PAGES</h1>
+      <div className="mb-8 bg-panel p-6 rounded-xl">
+        <h3 className="text-lg font-semibold text-white mb-4">Upload New Page</h3>
+        <ImageUploader bucket="novel-images" folder={`chapters/${params.chapterId}`}
+          onUpload={(url) => addPage(url)} />
+      </div>
+      {loading ? (
+        <p className="text-gray-400">Loading pages...</p>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {pages.map((page) => (
+            <div key={page.id} className="relative group">
+              <div className="bg-panel rounded-lg overflow-hidden">
+                <Image src={page.image_url} alt={`Page ${page.page_number}`}
+                  width={200} height={300} className="w-full h-auto object-cover" />
+                <div className="p-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-400">Page {page.page_number}</span>
+                  <button onClick={() => deletePage(page.id)}
+                    className="text-red-400 hover:text-red-300 text-sm">Delete</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
