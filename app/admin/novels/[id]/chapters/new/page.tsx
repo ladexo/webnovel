@@ -1,62 +1,42 @@
 'use client';
-
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 
-export default function NewChapterPage() {
-  const params = useParams();
+export default function NewChapterPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
   const [title, setTitle] = useState('');
   const [chapterNumber, setChapterNumber] = useState(1);
-  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.from('chapters').insert({
-      novel_id: params.id,
-      title,
-      chapter_number: chapterNumber,
-    });
-    if (error) {
-      alert('Error creating chapter: ' + error.message);
-      setLoading(false);
-    } else {
-      router.push(`/admin/novels/${params.id}/chapters`);
-    }
+    const { error } = await supabase.from('chapters').insert([{
+      novel_id: params.id, title, chapter_number: chapterNumber,
+    }]);
+    if (error) { alert('Error: ' + error.message); setLoading(false); return; }
+    router.push(`/admin/novels/${params.id}/chapters`);
+    router.refresh();
   };
 
   return (
-    <div>
-      <h1 className="comic-title text-3xl mb-8">Add New Chapter</h1>
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-6">
+    <div className="max-w-2xl">
+      <h1 className="comic-title text-4xl text-primary mb-8">ADD NEW CHAPTER</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Chapter Number</label>
-          <input
-            type="number"
-            value={chapterNumber}
+          <label className="block text-gray-300 mb-2">Chapter Number</label>
+          <input type="number" min={1} required value={chapterNumber}
             onChange={(e) => setChapterNumber(parseInt(e.target.value))}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-[#FFD700] focus:outline-none"
-            required
-            min={1}
-          />
+            className="w-full bg-surface border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Chapter Title</label>
-          <input
-            type="text"
-            value={title}
+          <label className="block text-gray-300 mb-2">Title</label>
+          <input type="text" required value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:border-[#FFD700] focus:outline-none"
-            required
-          />
+            className="w-full bg-surface border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-primary focus:outline-none" />
         </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-primary px-6 py-3 rounded-lg font-bold"
-        >
+        <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? 'Creating...' : 'Create Chapter'}
         </button>
       </form>
