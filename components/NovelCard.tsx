@@ -1,38 +1,31 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Novel } from '@/types';
 
 export default function NovelCard({ novel }: { novel: Novel }) {
-  const statusColor = {
-    ongoing: 'bg-green-500',
-    completed: 'bg-blue-500',
-    hiatus: 'bg-yellow-500',
-  }[novel.status] || 'bg-gray-500';
-
   return (
     <Link href={`/novels/${novel.id}`}>
-      <div className="comic-border rounded-lg overflow-hidden card-hover bg-gray-900">
-        <div className="relative h-64">
+      <div className="bg-panel rounded-xl overflow-hidden comic-border card-hover">
+        <div className="aspect-[2/3] relative bg-surface">
           {novel.cover_image ? (
-            <img
-              src={novel.cover_image}
-              alt={novel.title}
-              className="w-full h-full object-cover"
-            />
+            <Image src={novel.cover_image} alt={novel.title} fill className="object-cover" />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#FFD700]/20 to-[#FF00FF]/20 flex items-center justify-center">
-              <span className="text-4xl">📚</span>
+            <div className="w-full h-full flex items-center justify-center">
+              <span className="text-gray-600 text-4xl font-display">{novel.title[0]}</span>
             </div>
           )}
-          <span className={`absolute top-2 right-2 ${statusColor} text-white text-xs px-2 py-1 rounded-full font-semibold uppercase`}>
-            {novel.status}
-          </span>
         </div>
         <div className="p-4">
-          <h3 className="text-lg font-bold text-white mb-1 line-clamp-1">{novel.title}</h3>
-          <p className="text-sm text-gray-400 mb-2">{novel.author}</p>
-          <span className="text-xs text-[#00FFFF] border border-[#00FFFF]/30 px-2 py-1 rounded-full">
-            {novel.genre}
-          </span>
+          <h3 className="font-display text-lg text-primary truncate">{novel.title}</h3>
+          <p className="text-gray-400 text-sm mt-1">By {novel.author}</p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-accent">{novel.genre}</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${
+              novel.status === 'ongoing' ? 'bg-green-500/20 text-green-400' :
+              novel.status === 'completed' ? 'bg-cyber/20 text-cyber' :
+              'bg-yellow-500/20 text-yellow-400'
+            }`}>{novel.status}</span>
+          </div>
         </div>
       </div>
     </Link>
